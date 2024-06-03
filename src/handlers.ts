@@ -93,7 +93,6 @@ export default class CommandHandler {
 		try {
 			const profile = await this.client.getUserProfile(this.userId);
 			if (profile?.displayname) this.displayName = profile.displayname;
-			console.log({ profile });
 			if (!profile?.avatar_url) {
 				setBotAvatar(this.client);
 			}
