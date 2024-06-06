@@ -34,7 +34,7 @@ import {
 } from "./utils.js";
 import type OpenAI from "openai";
 import MonitorActivities from "./monitorActivities";
-import { type UserResponse, userDetailsResponse } from "./user";
+import { type IdentityResponse, getGidIdentity } from "./user";
 
 export default class CommandHandler {
 	// Variables so we can cache the bot's display name and ID for command matching later.
@@ -243,7 +243,7 @@ export default class CommandHandler {
 		try {
 			if (this.shouldIgnore(event, roomId)) return;
 			const localpartSender = new UserID(event.sender).localpart;
-			const user: UserResponse = await userDetailsResponse(localpartSender);
+			const user: IdentityResponse = await getGidIdentity(localpartSender);
 			const storageKey = this.getStorageKey(event, roomId);
 			const storedConversation = await this.getStoredConversation(
 				storageKey,

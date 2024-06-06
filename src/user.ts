@@ -4,7 +4,7 @@ import { KeyvStorageProvider } from "./storage";
 import { LogService } from "matrix-bot-sdk";
 import { API_URL } from "./env.js";
 
-export interface UserResponse {
+export interface IdentityResponse {
 	gid_uuid: string;
 	name: string;
 	display_name: string;
@@ -23,14 +23,16 @@ const base_url = `${API_URL}/v1`;
  * @param gid_uuid - The GlobalID UUID of the user.
  * @returns A promise that resolves to the user details.
  */
-export async function userDetailsResponse(gid_uuid: string) {
+export async function getGidIdentity(gid_uuid: string) {
 	try {
 		if (KEYV_BOT_STORAGE) {
 			storage = new KeyvStorageProvider(BOT_DEVICE_ID, "chatgpt-user-storage");
 		}
 		const cachedUser = await storage.readValue(`user-${gid_uuid}`);
 		if (cachedUser !== undefined) {
-			return Promise.resolve(JSON.parse(cachedUser)) as Promise<UserResponse>;
+			return Promise.resolve(
+				JSON.parse(cachedUser),
+			) as Promise<IdentityResponse>;
 		}
 		const response = await fetch(`${base_url}/directory/${gid_uuid}`, {
 			method: "GET",
@@ -42,7 +44,7 @@ export async function userDetailsResponse(gid_uuid: string) {
 			`user-${gid_uuid}`,
 			JSON.stringify(await response.json()),
 		);
-		return response.json() as Promise<UserResponse>;
+		return response.json() as Promise<IdentityResponse>;
 	} catch (err) {
 		LogService.error(`OpenAI-API Error: ${err}`);
 		return Promise.reject(err);
