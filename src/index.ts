@@ -32,10 +32,9 @@ import OpenAI from "openai";
 import { TokenManager } from "./token.js";
 
 LogService.setLogger(new RichConsoleLogger());
-LogService.setLevel(LogLevel.DEBUG); // Shows the Matrix sync loop details - not needed most of the time
-//LogService.setLevel(LogLevel.INFO);
+LogService.setLevel(LogLevel.INFO);
 LogService.muteModule("Metrics");
-// LogService.trace = LogService.debug;
+LogService.trace = LogService.debug;
 
 async function runService() {
 	if (KEYV_URL && KEYV_BACKEND === "file")
@@ -54,7 +53,7 @@ async function runService() {
 	if (MATRIX_ENCRYPTION)
 		cryptoStore = new RustSdkCryptoStorageProvider(
 			path.join(DATA_PATH, BOT_DEVICE_ID, "encrypted"),
-			1,
+			0,
 		);
 	const botUsernameWithoutDomain = parseMatrixUsernamePretty(BOT_CLIENT_ID);
 
