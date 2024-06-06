@@ -36,6 +36,9 @@ export const {
 	CHATGPT_TIMEOUT,
 	CHATGPT_PROMPT_PREFIX,
 	CHATGPT_IGNORE_MEDIA,
+	/**  Mixpanel */
+	MIXPANEL_PROJECT_TOKEN,
+	API_URL,
 } = parseEnv(process.env, {
 	DATA_PATH: {
 		schema: z.string().default("/storage/"),
@@ -171,5 +174,14 @@ export const {
 	CHATGPT_IGNORE_MEDIA: {
 		schema: z.boolean().default(false),
 		description: "Wether or not the bot should react to non-text messages",
+	},
+	/** Mixpanel settings */
+	MIXPANEL_PROJECT_TOKEN: {
+		schema: z.string().default(""),
+		description: "Set to a string to activate mixpanel tracking",
+	},
+	API_URL: {
+		schema: z.string().default(""),
+		description: "Set to a string for the API URL user directory",
 	},
 });
