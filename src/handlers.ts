@@ -33,12 +33,15 @@ import {
 	sendReply,
 } from "./utils.js";
 import type OpenAI from "openai";
+import MonitorActivities from "./monitorActivities";
+import { type IdentityResponse, getGidIdentity } from "./user";
 
 export default class CommandHandler {
 	// Variables so we can cache the bot's display name and ID for command matching later.
 	private displayName: string;
 	private userId: string;
 	private localpart: string;
+	private monitorActivities: MonitorActivities;
 
 	constructor(
 		private client: MatrixClient,
@@ -48,6 +51,8 @@ export default class CommandHandler {
 
 	public async start() {
 		await this.prepareProfile(); // Populate the variables above (async)
+		// prepare monitoring activites with unique id for the user and uns name
+		this.monitorActivities = new MonitorActivities();
 		this.client.on("room.message", this.onMessage.bind(this)); // Set up the event handler
 
 		this.client.on("room.failed_decryption", async (roomId, event, error) => {
@@ -237,7 +242,8 @@ export default class CommandHandler {
 	private async onMessage(roomId: string, event: MessageEvent) {
 		try {
 			if (this.shouldIgnore(event, roomId)) return;
-
+			const localpartSender = new UserID(event.sender).localpart;
+			const user: IdentityResponse = await getGidIdentity(localpartSender);
 			const storageKey = this.getStorageKey(event, roomId);
 			const storedConversation = await this.getStoredConversation(
 				storageKey,
@@ -252,6 +258,12 @@ export default class CommandHandler {
 				event,
 			);
 			if (!shouldBePrefixed) return;
+			// send tracking when user send new message
+			this.monitorActivities.trackSendMessageEvent(
+				event.content.body,
+				user.gid_uuid,
+				user.name,
+			);
 
 			await Promise.all([
 				this.client.sendReadReceipt(roomId, event.event_id),
