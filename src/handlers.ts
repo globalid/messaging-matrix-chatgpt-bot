@@ -31,6 +31,7 @@ import {
 	sendChatGPTMessage,
 	sendError,
 	sendReply,
+	setBotAvatar,
 } from "./utils.js";
 import type OpenAI from "openai";
 import MonitorActivities from "./monitorActivities";
@@ -97,6 +98,9 @@ export default class CommandHandler {
 		try {
 			const profile = await this.client.getUserProfile(this.userId);
 			if (profile?.displayname) this.displayName = profile.displayname;
+			if (!profile?.avatar_url) {
+				setBotAvatar(this.client);
+			}
 		} catch (e) {
 			LogService.warn("CommandHandler", e); // Non-fatal error - we'll just log it and move on.
 		}

@@ -1,7 +1,7 @@
 import Markdown from "markdown-it";
 import { LogService, type MatrixClient } from "matrix-bot-sdk";
 import type { MessageEvent, StoredConversation } from "./interfaces.js";
-import { CHATGPT_TIMEOUT } from "./env.js";
+import { CHATGPT_TIMEOUT, BOT_LOGO_URL } from "./env.js";
 import type OpenAI from "openai";
 import type { MessageContent } from "openai/resources/beta/threads/messages.js";
 import introMessage from "./introMessage.json" with { "type": "json" };
@@ -209,4 +209,9 @@ export async function checkingStatus(
 
 export function getIntroMessage() {
 	return introMessage;
+}
+
+export async function setBotAvatar(client: MatrixClient) {
+	const avatarMxUrl = await client.uploadContentFromUrl(BOT_LOGO_URL);
+	return client.setAvatarUrl(avatarMxUrl);
 }

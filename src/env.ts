@@ -13,6 +13,7 @@ export const {
 	BOT_CLIENT_ID,
 	BOT_CLIENT_SECRET,
 	BOT_DEVICE_ID,
+	BOT_LOGO_URL,
 	/** Matrix Bot Features */
 	MATRIX_AUTOJOIN,
 	MATRIX_ENCRYPTION,
@@ -76,6 +77,10 @@ export const {
 		schema: z.string().optional(),
 		description:
 			"Set device id that you should generate for persistant matrix device",
+	},
+	BOT_LOGO_URL: {
+		schema: z.string().optional(),
+		description: "Set logo url for the bot",
 	},
 	/** Matrix Bot Features */
 	MATRIX_AUTOJOIN: {
