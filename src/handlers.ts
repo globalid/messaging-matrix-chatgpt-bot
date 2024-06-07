@@ -34,8 +34,8 @@ import {
 	setBotAvatar,
 } from "./utils.js";
 import type OpenAI from "openai";
-import MonitorActivities from "./monitorActivities";
-import { type IdentityResponse, getGidIdentity } from "./user";
+import MonitorActivities from "./monitorActivities.js";
+import { type IdentityResponse, getGidIdentity } from "./user.js";
 
 export default class CommandHandler {
 	// Variables so we can cache the bot's display name and ID for command matching later.

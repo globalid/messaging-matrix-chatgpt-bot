@@ -1,6 +1,6 @@
 import { fetch } from "undici";
-import { BOT_DEVICE_ID, KEYV_BOT_STORAGE } from "./env";
-import { KeyvStorageProvider } from "./storage";
+import { BOT_DEVICE_ID, KEYV_BOT_STORAGE } from "./env.js";
+import { KeyvStorageProvider } from "./storage.js";
 import { LogService } from "matrix-bot-sdk";
 import { API_URL } from "./env.js";
 
