@@ -94,7 +94,6 @@ async function runService() {
 	const commands = new CommandHandler(client, openai, OPENAI_ASSISTANT_ID);
 	await commands.start();
 	await client.start();
-
 	LogService.info("index", "Bot started!");
 }
 
