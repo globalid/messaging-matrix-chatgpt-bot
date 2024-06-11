@@ -124,10 +124,10 @@
   dependencies:
     pg "8.11.5"
 
-"@matrix-org/matrix-sdk-crypto-nodejs@0.1.0-beta.12", "@matrix-org/matrix-sdk-crypto-nodejs@0.1.0-beta.6":
-  version "0.1.0-beta.12"
-  resolved "https://registry.yarnpkg.com/@matrix-org/matrix-sdk-crypto-nodejs/-/matrix-sdk-crypto-nodejs-0.1.0-beta.12.tgz#4adc5a6d93983cf589d64c450c10c6670b88f7c5"
-  integrity sha512-E3409r/kTaHVEc1TfcDxHZlT+NAcnJcMs8j94CYqWy4P4K8y2G4W/E+L+MGvktg7d1YqTiJtA0xQX3b7yWnUjw==
+"@matrix-org/matrix-sdk-crypto-nodejs@0.1.0-beta.6":
+  version "0.1.0-beta.6"
+  resolved "https://registry.yarnpkg.com/@matrix-org/matrix-sdk-crypto-nodejs/-/matrix-sdk-crypto-nodejs-0.1.0-beta.6.tgz#0ecae51103ee3c107af0d6d0738f33eb7cc9857e"
+  integrity sha512-JXyrHuCVMydUGgSetWsfqbbvHj3aUMOX5TUghlMtLFromyEu7wIsNgYt7PjJ+k3WdF4GVABRy4P6GNjaEMy2uA==
   dependencies:
     https-proxy-agent "^5.0.1"
     node-downloader-helper "^2.1.5"
