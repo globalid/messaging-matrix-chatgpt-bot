@@ -16,7 +16,6 @@
     "typecheck": "yarn tsc"
   },
   "dependencies": {
-    "@matrix-org/matrix-sdk-crypto-nodejs": "0.1.0-beta.12",
     "@keyv/postgres": "^1.4.11",
     "dotenv": "^16.4.5",
     "hash.js": "^1.1.7",
@@ -24,7 +23,7 @@
     "keyv": "^4.5.4",
     "keyv-file": "^0.3.0",
     "markdown-it": "^14.0.0",
-    "matrix-bot-sdk": "0.7.1",
+    "matrix-bot-sdk": "0.6.5",
     "mixpanel": "^0.18.0",
     "openai": "^4.47.1",
     "typescript": "^5.3.3",
@@ -34,8 +33,5 @@
   },
   "devDependencies": {
     "tsx": "^4.10.2"
-  },
-  "resolutions": {
-    "@matrix-org/matrix-sdk-crypto-nodejs": "0.1.0-beta.12"
   }
 }
