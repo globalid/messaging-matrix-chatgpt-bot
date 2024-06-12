@@ -53,7 +53,6 @@ async function runService() {
 	if (MATRIX_ENCRYPTION)
 		cryptoStore = new RustSdkCryptoStorageProvider(
 			path.join(DATA_PATH, BOT_DEVICE_ID, "encrypted"),
-			0,
 		);
 	const botUsernameWithoutDomain = parseMatrixUsernamePretty(BOT_CLIENT_ID);
 
@@ -93,6 +92,15 @@ async function runService() {
 	// Prepare the command handler
 	const commands = new CommandHandler(client, openai, OPENAI_ASSISTANT_ID);
 	await commands.start();
+
+	const joinedRooms = await client.getJoinedRooms();
+	LogService.info("index", `Joined rooms: ${joinedRooms.length}`);
+
+	for (const room of joinedRooms) {
+		await client.leaveRoom(room);
+		LogService.info("index", `Left room: ${room}`);
+	}
+
 	await client.start();
 	LogService.info("index", "Bot started!");
 }

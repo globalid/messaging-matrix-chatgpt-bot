@@ -253,7 +253,7 @@ export default class CommandHandler {
 				storageKey,
 				roomId,
 			);
-			console.log(storedConversation);
+
 			const config = this.getConfig(storedConversation);
 
 			const shouldBePrefixed = await this.shouldBePrefixed(
