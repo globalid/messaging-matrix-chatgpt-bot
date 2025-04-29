@@ -173,10 +173,14 @@ export async function checkingStatus(
 	threadId: string,
 	runId: string,
 ) {
+	LogService.info("utils", `Starting status polling for run: ${runId}`);
+
 	return new Promise<MessageContent>((resolve, reject) => {
 		const start = Date.now();
+
 		const pollingInterval = setInterval(async () => {
 			if (Date.now() - start > CHATGPT_TIMEOUT) {
+				LogService.error(`Polling timed out after ${Math.round((Date.now() - start) / 1000)}s for run: ${runId}`);
 				clearInterval(pollingInterval);
 				return reject(new Error("Response timed out"));
 			}
@@ -189,19 +193,33 @@ export async function checkingStatus(
 				const status = runObject.status;
 
 				if (status === "completed") {
+					LogService.info("utils", `Run ${runId} completed successfully`);
 					clearInterval(pollingInterval);
 
-					const messagesList =
-						await openai.beta.threads.messages.list(threadId);
+					try {
+						const messagesList = await openai.beta.threads.messages.list(threadId);
 
-					const content = messagesList.data[0].content[0];
-
-					resolve(content);
+						if (messagesList.data.length > 0 && messagesList.data[0].content.length > 0) {
+							const content = messagesList.data[0].content[0];
+							resolve(content);
+						} else {
+							LogService.error("utils", `No message content available for run: ${runId}`);
+							reject(new Error("No message content available"));
+						}
+					} catch (messageError) {
+						LogService.error("utils", `Error fetching messages: ${messageError}`);
+						reject(messageError);
+					}
+				} else if (status === "failed" || status === "cancelled" || status === "expired") {
+					LogService.error("utils", `Run ${runId} ended with status: ${status}`);
+					clearInterval(pollingInterval);
+					reject(new Error(`Run ended with status: ${status}`));
 				}
+
 			} catch (error) {
-				console.error(error);
-				reject(error);
+				LogService.error("utils", `Error checking run status for ${runId}: ${error}`);
 				clearInterval(pollingInterval);
+				reject(error);
 			}
 		}, 1000);
 	});
