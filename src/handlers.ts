@@ -274,7 +274,7 @@ export default class CommandHandler {
 				this.client.setTyping(roomId, true, CHATGPT_TIMEOUT),
 			]);
 
-			const bodyWithoutPrefix = this.getBodyWithoutPrefix(
+			const bodyWithoutPrefix = await this.getBodyWithoutPrefix(
 				event,
 				config,
 				shouldBePrefixed,
@@ -292,7 +292,7 @@ export default class CommandHandler {
 			const result = await sendChatGPTMessage(
 				this.openai,
 				this.assistantId,
-				await bodyWithoutPrefix,
+				bodyWithoutPrefix,
 				storedConversation,
 			);
 
