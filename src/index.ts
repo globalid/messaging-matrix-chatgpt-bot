@@ -96,10 +96,10 @@ async function runService() {
 	const joinedRooms = await client.getJoinedRooms();
 	LogService.info("index", `Joined rooms: ${joinedRooms.length}`);
 
-	for (const room of joinedRooms) {
-		await client.leaveRoom(room);
-		LogService.info("index", `Left room: ${room}`);
-	}
+	// for (const room of joinedRooms) {
+	// 	await client.leaveRoom(room);
+	// 	LogService.info("index", `Left room: ${room}`);
+	// }
 
 	await client.start();
 	LogService.info("index", "Bot started!");
