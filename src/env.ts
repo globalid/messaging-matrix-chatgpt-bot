@@ -39,6 +39,10 @@ export const {
 	/**  Mixpanel */
 	MIXPANEL_PROJECT_TOKEN,
 	API_URL,
+	/** Intro Message Settings */
+	BOT_NAME,
+	INTRO_MESSAGE_BODY,
+	INTRO_MESSAGE_FORMATTED_BODY,
 } = parseEnv(process.env, {
 	DATA_PATH: {
 		schema: z.string().default("/storage/"),
@@ -183,5 +187,18 @@ export const {
 	API_URL: {
 		schema: z.string().default(""),
 		description: "Set to a string for the API URL user directory",
+	},
+	/** Intro Message Settings */
+	BOT_NAME: {
+		schema: z.string().default(""),
+		description: "Set the bot name displayed in intro message",
+	},
+	INTRO_MESSAGE_BODY: {
+		schema: z.string().default(`Hello I'm ${process.env.BOT_NAME} bot, how can I help you?`),
+		description: "Set the plain text body of the intro message",
+	},
+	INTRO_MESSAGE_FORMATTED_BODY: {
+		schema: z.string().default(`Hello I'm <strong>${process.env.BOT_NAME}</strong> bot, how can I help you?`),
+		description: "Set the HTML formatted body of the intro message",
 	},
 });
