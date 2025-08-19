@@ -4,6 +4,15 @@ import type { MessageEvent, StoredConversation } from "./interfaces.js";
 import { CHATGPT_TIMEOUT, BOT_LOGO_URL, INTRO_MESSAGE_BODY, INTRO_MESSAGE_FORMATTED_BODY } from "./env.js";
 import type OpenAI from "openai";
 import type { MessageContent } from "openai/resources/beta/threads/messages.js";
+import { createZendeskTicket } from "./functions/zendesk.js";
+
+const TOOL_EXECUTORS = {
+  create_zendesk_ticket: async (argsJson) => {
+    const args = JSON.parse(argsJson || "{}");
+    return await createZendeskTicket(args);
+  },
+};
+
 
 const md = Markdown();
 
@@ -19,12 +28,12 @@ export function parseMatrixUsernamePretty(matrix_username: string): string {
 }
 
 export function isEventAMessage(event: unknown): event is MessageEvent {
-	return (
-		typeof event === "object" &&
-		!event &&
-		"type" in event &&
-		event.type === "m.room.message"
-	);
+  return (
+    typeof event === "object" &&
+    event !== null &&
+    "type" in event &&
+    (event as any).type === "m.room.message"
+  );
 }
 
 export async function sendError(
@@ -107,6 +116,7 @@ export async function sendChatGPTMessage(
 	assistantId: string,
 	question: string,
 	storedConversation: StoredConversation | undefined,
+	meta?: UserData,
 ) {
 	let threadId: string | null = null;
 	if (!storedConversation) {
@@ -122,7 +132,7 @@ export async function sendChatGPTMessage(
 
 	const runId = run.id;
 
-	const message = await checkingStatus(openai, threadId, runId);
+	const message = await checkingStatus(openai, threadId, runId,meta);
 	return { message, threadId };
 }
 
@@ -168,61 +178,146 @@ export async function runAssistant(
 }
 
 export async function checkingStatus(
-	openai: OpenAI,
-	threadId: string,
-	runId: string,
+  openai: OpenAI,
+  threadId: string,
+  runId: string,
+	meta?: UserData
 ) {
-	LogService.info("utils", `Starting status polling for run: ${runId}`);
+  LogService.info("utils", `Starting status polling for run: ${runId}`);
 
-	return new Promise<MessageContent>((resolve, reject) => {
-		const start = Date.now();
+  return new Promise<MessageContent>((resolve, reject) => {
+    const start = Date.now();
+    const handledActionIds = new Set<string>();
+    let submitInFlight = false; // (3) prevent concurrent submit attempts
 
-		const pollingInterval = setInterval(async () => {
-			if (Date.now() - start > CHATGPT_TIMEOUT) {
-				LogService.error(`Polling timed out after ${Math.round((Date.now() - start) / 1000)}s for run: ${runId}`);
-				clearInterval(pollingInterval);
-				return reject(new Error("Response timed out"));
-			}
+    const pollingInterval = setInterval(async () => {
+      if (Date.now() - start > CHATGPT_TIMEOUT) {
+        LogService.error(`Polling timed out after ${Math.round((Date.now() - start) / 1000)}s for run: ${runId}`);
+        clearInterval(pollingInterval);
+        return reject(new Error("Response timed out"));
+      }
 
-			try {
-				const runObject = await openai.beta.threads.runs.retrieve(
-					threadId,
-					runId,
-				);
-				const status = runObject.status;
+      try {
+        const runObject = await openai.beta.threads.runs.retrieve(threadId, runId);
+        const status = runObject.status;
 
-				if (status === "completed") {
-					LogService.info("utils", `Run ${runId} completed successfully`);
-					clearInterval(pollingInterval);
+        if (status === "requires_action") {
+          const toolCalls = runObject.required_action?.submit_tool_outputs?.tool_calls || [];
 
-					try {
-						const messagesList = await openai.beta.threads.messages.list(threadId);
+          if (toolCalls.length === 0) {
+            LogService.info("utils", `Run ${runId} requires_action with 0 tool calls — skipping submit this tick.`);
+            return;
+          }
 
-						if (messagesList.data.length > 0 && messagesList.data[0].content.length > 0) {
-							const content = messagesList.data[0].content[0];
-							resolve(content);
-						} else {
-							LogService.error("utils", `No message content available for run: ${runId}`);
-							reject(new Error("No message content available"));
-						}
-					} catch (messageError) {
-						LogService.error("utils", `Error fetching messages: ${messageError}`);
-						reject(messageError);
-					}
-				} else if (status === "failed" || status === "cancelled" || status === "expired") {
-					LogService.error("utils", `Run ${runId} ended with status: ${status}`);
-					clearInterval(pollingInterval);
-					reject(new Error(`Run ended with status: ${status}`));
-				}
+          const actionId = toolCalls.map(tc => tc.id).join("|");
 
-			} catch (error) {
-				LogService.error("utils", `Error checking run status for ${runId}: ${error}`);
-				clearInterval(pollingInterval);
-				reject(error);
-			}
-		}, 1000);
-	});
+          if (handledActionIds.has(actionId)) {
+            LogService.info("utils", `Skipping already-handled requires_action for run: ${runId}`);
+            return;
+          }
+
+          if (submitInFlight) {
+            LogService.info("utils", `Submit already in flight for run: ${runId} — skipping this tick.`);
+            return;
+          }
+
+          submitInFlight = true;
+
+          try {
+            LogService.info("utils", `Run ${runId} requires_action with ${toolCalls.length} tool call(s).`);
+
+            // Build outputs
+            const tool_outputs: { tool_call_id: string; output: string }[] = [];
+            for (const tc of toolCalls) {
+              const name = tc.function?.name || "";
+              let argsJson = tc.function?.arguments ?? "{}";
+							   let parsed: any; try { parsed = JSON.parse(argsJson || "{}"); } catch { parsed = {}; }
+
+        if (name === "create_zendesk_ticket" && meta) {
+          parsed.comment = augmentCommentWithReporter(parsed.comment || "", meta);
+          argsJson = JSON.stringify(parsed);
+        }
+              const exec = TOOL_EXECUTORS[name];
+
+              if (!exec) {
+                LogService.error("utils", `No executor registered for tool: ${name}`);
+                tool_outputs.push({
+                  tool_call_id: tc.id,
+                  output: JSON.stringify({ error: `No executor registered for ${name}` }),
+                });
+                continue;
+              }
+
+              try {
+                const result = await exec(argsJson);
+                // Ensure output is a string as required by the API
+                tool_outputs.push({
+                  tool_call_id: tc.id,
+                  output: typeof result === "string" ? result : JSON.stringify(result),
+                });
+              } catch (toolErr) {
+                LogService.error("utils", `Tool ${name} failed: ${toolErr}`);
+                tool_outputs.push({
+                  tool_call_id: tc.id,
+                  output: JSON.stringify({ error: String(toolErr) }),
+                });
+              }
+            }
+
+            const latest = await openai.beta.threads.runs.retrieve(threadId, runId);
+            if (latest.status !== "requires_action") {
+              LogService.info("utils", `Run ${runId} changed to ${latest.status} before submit — skipping submit.`);
+              return;
+            }
+
+            await openai.beta.threads.runs.submitToolOutputs(threadId, runId, { tool_outputs });
+            handledActionIds.add(actionId);
+            LogService.info("utils", `Successfully submitted tool outputs for run: ${runId}`);
+            return;
+          } catch (submitErr) {
+            LogService.error("utils", `Error handling requires_action: ${submitErr}`);
+            return reject(submitErr as Error);
+          } finally {
+            submitInFlight = false;
+          }
+        }
+
+        if (status === "completed") {
+          LogService.info("utils", `Run ${runId} completed successfully`);
+          clearInterval(pollingInterval);
+
+          try {
+            const messagesList = await openai.beta.threads.messages.list(threadId);
+            if (messagesList.data.length > 0 && messagesList.data[0].content.length > 0) {
+              const content = messagesList.data[0].content[0];
+              return resolve(content as MessageContent);
+            } else {
+              LogService.error("utils", `No message content available for run: ${runId}`);
+              return reject(new Error("No message content available"));
+            }
+          } catch (messageError) {
+            LogService.error("utils", `Error fetching messages: ${messageError}`);
+            return reject(messageError as Error);
+          }
+        }
+
+        if (status === "failed" || status === "cancelled" || status === "expired") {
+          LogService.error("utils", `Run ${runId} ended with status: ${status}`);
+          clearInterval(pollingInterval);
+          return reject(new Error(`Run ended with status: ${status}`));
+        }
+
+        // For "in_progress" or "queued": just keep polling
+
+      } catch (error) {
+        LogService.error("utils", `Error checking run status for ${runId}: ${error}`);
+        clearInterval(pollingInterval);
+        return reject(error as Error);
+      }
+    }, 1200);
+  });
 }
+
 
 export function getIntroMessage() {
 	return {
@@ -237,3 +332,25 @@ export async function setBotAvatar(client: MatrixClient) {
 	const avatarMxUrl = await client.uploadContentFromUrl(BOT_LOGO_URL);
 	return client.setAvatarUrl(avatarMxUrl);
 }
+
+export type UserData = {
+  gidUuid: string;
+  name: string;
+};
+export function augmentCommentWithReporter(original: string, meta: UserData) {
+  const footer = buildUserFooter(meta);
+  const cap = 8000;
+  const safe = (original || "").slice(0, Math.max(0, cap - footer.length));
+  return safe + footer;
+}
+
+function buildUserFooter(meta: UserData) {
+  return `
+
+---
+User
+- Name: ${meta.name || "n/a"}
+- GID UUID: ${meta.gidUuid || "n/a"}
+`;
+}
+

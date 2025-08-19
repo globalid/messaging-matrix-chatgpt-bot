@@ -288,12 +288,14 @@ export default class CommandHandler {
 				);
 				return;
 			}
+			const meta = { gidUuid: user.gid_uuid, name: user.name };
 
 			const result = await sendChatGPTMessage(
 				this.openai,
 				this.assistantId,
 				bodyWithoutPrefix,
 				storedConversation,
+				meta
 			);
 
 			const response =
