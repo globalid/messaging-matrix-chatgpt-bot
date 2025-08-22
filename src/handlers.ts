@@ -337,9 +337,7 @@ export default class CommandHandler {
 			LogService.error(`OpenAI-API Error: ${err}`);
 			sendError(
 				this.client,
-				`The bot has encountered an error, please contact your administrator (Error code ${
-					err.status || "Unknown"
-				}).`,
+				`Whoops! Something went wrong. Can you try again in a bit?`,
 				roomId,
 				event.event_id,
 			);
