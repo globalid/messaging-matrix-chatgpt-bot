@@ -337,7 +337,7 @@ export default class CommandHandler {
 			LogService.error(`OpenAI-API Error: ${err}`);
 			sendError(
 				this.client,
-				`Whoops! Something went wrong. Can you try again in a bit?`,
+				`Apologies, I wasn't able to process that request. Please try again.`,
 				roomId,
 				event.event_id,
 			);
