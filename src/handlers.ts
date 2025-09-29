@@ -8,6 +8,8 @@ import {
 	CHATGPT_CONTEXT,
 	CHATGPT_TIMEOUT,
 	CHATGPT_IGNORE_MEDIA,
+	BOT_ENABLED,
+	BOT_DISABLED_MESSAGE,
 	MATRIX_DEFAULT_PREFIX_REPLY,
 	MATRIX_DEFAULT_PREFIX,
 	MATRIX_BLACKLIST,
@@ -246,8 +248,6 @@ export default class CommandHandler {
 	private async onMessage(roomId: string, event: MessageEvent) {
 		try {
 			if (this.shouldIgnore(event, roomId)) return;
-			const localpartSender = new UserID(event.sender).localpart;
-			const user: IdentityResponse = await getGidIdentity(localpartSender);
 			const storageKey = this.getStorageKey(event, roomId);
 			const storedConversation = await this.getStoredConversation(
 				storageKey,
@@ -262,6 +262,23 @@ export default class CommandHandler {
 				event,
 			);
 			if (!shouldBePrefixed) return;
+			if (!BOT_ENABLED) {
+				await Promise.all([
+					this.client.sendReadReceipt(roomId, event.event_id),
+					sendReply(
+						this.client,
+						roomId,
+						this.getRootEventId(event),
+						BOT_DISABLED_MESSAGE,
+						MATRIX_THREADS,
+						MATRIX_RICH_TEXT,
+					),
+				]);
+				return;
+			}
+
+			const localpartSender = new UserID(event.sender).localpart;
+			const user: IdentityResponse = await getGidIdentity(localpartSender);
 			// send tracking when user send new message
 			this.monitorActivities.trackSendMessageEvent(
 				event.content.body,

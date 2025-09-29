@@ -8,6 +8,9 @@ export const {
 	KEYV_BACKEND,
 	KEYV_URL,
 	KEYV_BOT_STORAGE,
+	/** Bot Toggle */
+	BOT_ENABLED,
+	BOT_DISABLED_MESSAGE,
 	/** Matrix Bot Settings */
 	MATRIX_HOMESERVER_URL,
 	BOT_CLIENT_ID,
@@ -48,6 +51,20 @@ export const {
 		schema: z.string().default("/storage/"),
 		description:
 			"Set to /storage/ if using docker, ./storage if running without",
+	},
+	/** Bot Toggle */
+	BOT_ENABLED: {
+		schema: z.boolean().default(true),
+		description: "Set to false to disable the bot responses",
+	},
+	BOT_DISABLED_MESSAGE: {
+		schema: z
+			.string()
+			.default(
+				"We apologize, but the USBC bot is temporarily disabled and unable to respond to messages. Log events will continue to be delivered as usual.",
+			),
+		description:
+			"Message sent to users when the bot is disabled (fallback message)",
 	},
 	KEYV_BACKEND: {
 		schema: z.enum(["file", "other"]).default("file"),
