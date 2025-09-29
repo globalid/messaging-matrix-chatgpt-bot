@@ -31,6 +31,10 @@ cp .env.example .env
 
 Adjust all required settings in the `.env` file before running. Optional settings can also be adjusted later.
 
+### Bot Toggle
+- `BOT_ENABLED` (default: `true`): set to `false` to temporarily disable the bot.
+- `BOT_DISABLED_MESSAGE` (default: `We apologize, but the USBC bot is temporarily disabled and unable to respond to messages. Log events will continue to be delivered as usual.`): reply sent when the bot is disabled.
+
 ## Prerequsistes
 
 ### Matrix
